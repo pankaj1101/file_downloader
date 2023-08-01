@@ -16,16 +16,17 @@ Future main() async {
       ],
       debug: true);
 
-
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.storage.request();
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
-  _MyAppState createState() => new _MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
@@ -33,7 +34,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
       if (isAllowed) {
@@ -52,13 +52,12 @@ class _MyAppState extends State<MyApp> {
           return SafeArea(
             child: InAppWebView(
               initialUrlRequest:
-              URLRequest(url: Uri.parse("website_link")),
+                  URLRequest(url: Uri.parse("http://ibsdemo.in/")),
               initialOptions: InAppWebViewGroupOptions(
                 crossPlatform: InAppWebViewOptions(
                     useShouldOverrideUrlLoading: true,
                     useOnLoadResource: true,
                     supportZoom: false,
-
                     useOnDownloadStart: true),
               ),
               onWebViewCreated: (InAppWebViewController controller) {
