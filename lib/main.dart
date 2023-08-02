@@ -1,105 +1,72 @@
-import 'dart:async';
-import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_file_downloader/flutter_file_downloader.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-Future main() async {
-  AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-            channelKey: "basic_channel",
-            channelName: "Basic Notification",
-            channelDescription: "Description")
-      ],
-      debug: true);
-
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.storage.request();
 
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
-  _MyAppState createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      title: 'My App',
+      home: MyHomePage(),
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> {
-  InAppWebViewController? _webViewController;
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({Key? key}) : super(key: key);
 
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
-      if (isAllowed) {
-        AwesomeNotifications().requestPermissionToSendNotifications();
+    _requestPermission(Permission.storage);
+  }
+
+  Future<bool> _requestPermission(Permission permission) async {
+    AndroidDeviceInfo build = await DeviceInfoPlugin().androidInfo;
+    if (build.version.sdkInt! >= 30) {
+      var re = await Permission.manageExternalStorage.request();
+      if (re.isGranted) {
+        return true;
+      } else {
+        return false;
       }
-    });
+    } else {
+      if (await permission.isGranted) {
+        return true;
+      } else {
+        var result = await permission.request();
+        if (result.isGranted) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(),
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Builder(builder: (context) {
-          return SafeArea(
-            child: InAppWebView(
-              initialUrlRequest:
-                  URLRequest(url: Uri.parse("http://ibsdemo.in/")),
-              initialOptions: InAppWebViewGroupOptions(
-                crossPlatform: InAppWebViewOptions(
-                    useShouldOverrideUrlLoading: true,
-                    useOnLoadResource: true,
-                    supportZoom: false,
-                    useOnDownloadStart: true),
-              ),
-              onWebViewCreated: (InAppWebViewController controller) {
-                _webViewController = controller;
-              },
-              onDownloadStart: (controller, url) async {
-                print("onDownloadStart $url");
-                final taskId = await FileDownloader.downloadFile(
-                  url: url.toString(),
-                  onDownloadCompleted: (String path) {
-                    triggerNotification();
-                    print('FILE DOWNLOADED TO PATH: $path');
-                    showDownloadCompleteSnackbar(context, path);
-                  },
-                  onDownloadError: (String error) {
-                    print('DOWNLOAD ERROR: $error');
-                  },
-                );
-              },
-            ),
-          );
-        }),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Home Page'),
+      ),
+      body: const Center(
+        child: Text('Your content goes here'),
       ),
     );
-  }
-
-  void showDownloadCompleteSnackbar(BuildContext context, String filePath) {
-    print('showDownloadCompleteSnackbar called'); // Add this line
-    final snackBar = SnackBar(
-      content: Text('File downloaded : $filePath'),
-      duration: const Duration(seconds: 2),
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
-  void triggerNotification() {
-    AwesomeNotifications().createNotification(
-        content: NotificationContent(
-            id: 1101,
-            channelKey: "basic_channel",
-            title: 'File Downloaded',
-            body: 'Click to open'));
   }
 }
